@@ -1,91 +1,162 @@
 package com.ebr163.cleanableeditview;
 
-import android.annotation.TargetApi;
 import android.content.Context;
-import android.os.Build;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.transition.TransitionManager;
-import android.support.design.widget.TextInputLayout;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.support.v7.widget.AppCompatEditText;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
+import android.view.MotionEvent;
 
-/**
- * Created by Bakht on 27.06.2016.
- */
-public class CleanableEditText extends RelativeLayout {
+public class CleanableEditText extends AppCompatEditText {
 
-    private TextInputLayout textView;
-    private ImageView cleanButton;
-    private RelativeLayout transitionsContainer;
-    private TextView error;
+    private Drawable drawableRight;
+    private Drawable drawableLeft;
+    private Drawable drawableTop;
+    private Drawable drawableBottom;
+
+    int actionX, actionY;
+
+    public interface DrawableClickListener {
+        enum DrawablePosition {TOP, BOTTOM, LEFT, RIGHT}
+        void onClick(DrawablePosition target);
+    }
+
+    private DrawableClickListener clickListener;
 
     public CleanableEditText(Context context) {
         super(context);
-        init(context);
+        initClickListener();
     }
 
-    public CleanableEditText(Context context, AttributeSet attrs) {
+    public CleanableEditText(final Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context);
+        initClickListener();
     }
 
-    public CleanableEditText(Context context, AttributeSet attrs, int defStyleAttr) {
+    public CleanableEditText(final Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context);
+        initClickListener();
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public CleanableEditText(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        init(context);
-    }
-
-    private void init(Context context) {
-        LayoutInflater inflater = (LayoutInflater) context
-                .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View view = inflater.inflate(R.layout.cleanable_edit_view, this, false);
-        transitionsContainer = (RelativeLayout) view.findViewById(R.id.container);
-        cleanButton = (ImageView) view.findViewById(R.id.clean_btn);
-        error = (TextView) view.findViewById(R.id.error);
-        initText(view);
-        addView(view);
-    }
-
-    private void initText(View view){
-        textView = (TextInputLayout) view.findViewById(R.id.text);
-        textView.getEditText().addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @TargetApi(Build.VERSION_CODES.KITKAT)
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                TransitionManager.beginDelayedTransition(transitionsContainer);
-                if (s.toString().equals("")){
-                    cleanButton.setVisibility(GONE);
-                } else {
-                    cleanButton.setVisibility(VISIBLE);
+    private void initClickListener() {
+        setDrawableClickListener(new DrawableClickListener() {
+            public void onClick(DrawablePosition target) {
+                switch (target) {
+                    case RIGHT:
+                        setText(null);
+                        break;
+                    default:
+                        break;
                 }
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
         });
     }
 
-    public void setError(String text){
-        error.setText(text);
+    @Override
+    public void setCompoundDrawables(Drawable left, Drawable top, Drawable right, Drawable bottom) {
+        if (left != null) {
+            drawableLeft = left;
+        }
+        if (right != null) {
+            drawableRight = right;
+        }
+        if (top != null) {
+            drawableTop = top;
+        }
+        if (bottom != null) {
+            drawableBottom = bottom;
+        }
+        super.setCompoundDrawables(left, top, right, bottom);
     }
 
-    public void setErrorEnabled(boolean flag){
-        error.setVisibility(flag ? VISIBLE : GONE);
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        Rect bounds;
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            actionX = (int) event.getX();
+            actionY = (int) event.getY();
+            if (drawableBottom != null
+                    && drawableBottom.getBounds().contains(actionX, actionY)) {
+                clickListener.onClick(DrawableClickListener.DrawablePosition.BOTTOM);
+                return super.onTouchEvent(event);
+            }
+
+            if (drawableTop != null
+                    && drawableTop.getBounds().contains(actionX, actionY)) {
+                clickListener.onClick(DrawableClickListener.DrawablePosition.TOP);
+                return super.onTouchEvent(event);
+            }
+
+            if (drawableLeft != null) {
+                bounds = drawableLeft.getBounds();
+
+                int x, y;
+                int extraTapArea = (int) (13 * getResources().getDisplayMetrics().density + 0.5);
+
+                x = actionX;
+                y = actionY;
+
+                if (!bounds.contains(actionX, actionY)) {
+                    x =  actionX - extraTapArea;
+                    y =  actionY - extraTapArea;
+
+                    if (x <= 0)
+                        x = actionX;
+
+                    if (y <= 0)
+                        y = actionY;
+
+                    if (x < y) y = x;
+                }
+
+                if (bounds.contains(x, y) && clickListener != null) {
+                    clickListener.onClick(DrawableClickListener.DrawablePosition.LEFT);
+                    event.setAction(MotionEvent.ACTION_CANCEL);
+                    return false;
+                }
+            }
+
+            if (drawableRight != null) {
+                bounds = drawableRight.getBounds();
+
+                int x, y;
+                int extraTapArea = 13;
+
+                x = actionX + extraTapArea;
+                y = actionY - extraTapArea;
+
+                x = getWidth() - x;
+
+                if (x <= 0) {
+                    x += extraTapArea;
+                }
+
+                if (y <= 0)
+                    y = actionY;
+
+                if (bounds.contains(x, y) && clickListener != null) {
+                    clickListener.onClick(DrawableClickListener.DrawablePosition.RIGHT);
+                    event.setAction(MotionEvent.ACTION_CANCEL);
+                    return false;
+                }
+                return super.onTouchEvent(event);
+            }
+
+        }
+        return super.onTouchEvent(event);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        drawableRight = null;
+        drawableBottom = null;
+        drawableLeft = null;
+        drawableTop = null;
+        super.finalize();
+    }
+
+    public void setDrawableClickListener(DrawableClickListener listener) {
+        this.clickListener = listener;
     }
 }
+

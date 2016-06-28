@@ -16,10 +16,4 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <Button
-        android:onClick="onClick"
-        android:text="asdsad"
-        android:layout_below="@+id/tex1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
 </RelativeLayout>
