@@ -15,6 +15,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 /**
  * Created by Bakht on 27.06.2016.
@@ -24,6 +25,7 @@ public class CleanableEditText extends RelativeLayout {
     private TextInputLayout textView;
     private ImageView cleanButton;
     private RelativeLayout transitionsContainer;
+    private TextView error;
 
     public CleanableEditText(Context context) {
         super(context);
@@ -52,6 +54,7 @@ public class CleanableEditText extends RelativeLayout {
         View view = inflater.inflate(R.layout.cleanable_edit_view, this, false);
         transitionsContainer = (RelativeLayout) view.findViewById(R.id.container);
         cleanButton = (ImageView) view.findViewById(R.id.clean_btn);
+        error = (TextView) view.findViewById(R.id.error);
         initText(view);
         addView(view);
     }
@@ -79,18 +82,10 @@ public class CleanableEditText extends RelativeLayout {
     }
 
     public void setError(String text){
-        textView.setError(text);
+        error.setText(text);
     }
 
     public void setErrorEnabled(boolean flag){
-        LayoutParams cleanBtnParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        cleanBtnParams.addRule(ALIGN_PARENT_RIGHT);
-        if (flag){
-            cleanBtnParams.setMargins(0, 30, 0, 0);
-        } else {
-            cleanBtnParams.addRule(CENTER_HORIZONTAL);
-        }
-        cleanButton.setLayoutParams(cleanBtnParams);
-        textView.setErrorEnabled(flag);
+        error.setVisibility(flag ? VISIBLE : GONE);
     }
 }
